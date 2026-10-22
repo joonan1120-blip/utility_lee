@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Utility 운전일지</title>
+<style>
+:root{
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#eceae4; --line:#dedcd5;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7974;
+  --accent:#2a78d6; --accent-ink:#fff;
+  --good:#0ca30c; --good-bg:#e6f4e6; --good-ink:#1f6b1f;
+  --bad:#d03b3b; --bad-bg:#fde8e8; --bad-ink:#a12727;
+  --warn-bg:#fff4dc; --warn-ink:#7a5200;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121211; --surface:#1a1a19; --surface-2:#262624; --line:#34332f;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#97968f;
+    --accent:#3987e5; --good-bg:#13301a; --good-ink:#7fd67f; --bad-bg:#3a1717; --bad-ink:#ff9c9c;
+    --warn-bg:#3a2d0c; --warn-ink:#ffd27a; --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121211; --surface:#1a1a19; --surface-2:#262624; --line:#34332f;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#97968f;
+  --accent:#3987e5; --good-bg:#13301a; --good-ink:#7fd67f; --bad-bg:#3a1717; --bad-ink:#ff9c9c;
+  --warn-bg:#3a2d0c; --warn-ink:#ffd27a; --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  -webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:12px 16px 96px}
+h1{font-size:1.15rem;margin:4px 0 10px}
+h2{font-size:1.05rem;margin:18px 0 8px}
+.muted{color:var(--muted);font-size:.85rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
+.row{display:flex;gap:8px;align-items:center}
+.row > *{flex:1;min-width:0}
+label.f{display:block;font-size:.78rem;color:var(--text-2);margin-bottom:3px}
+input.in, select.in{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px}
+input.in:focus,select.in:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.seg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 4px;border-radius:8px;font-weight:600;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.chips button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.85rem}
+.chips button[aria-pressed="true"]{background:var(--text);color:var(--surface);border-color:var(--text)}
+.bar{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.eq{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:10px;text-align:left;min-height:64px}
+.eq b{display:block;font-size:.92rem;line-height:1.25}
+.eq span{font-size:.78rem;color:var(--muted)}
+.eq.done{border-color:var(--good);background:var(--good-bg)}
+.eq.part{border-color:#e6b84a}
+.eq.bad{border-color:var(--bad);background:var(--bad-bg)}
+.badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:.72rem;font-weight:600;margin-left:4px;vertical-align:1px}
+.b-ok{background:var(--good-bg);color:var(--good-ink)}
+.b-bad{background:var(--bad-bg);color:var(--bad-ink)}
+.b-rec{background:var(--surface-2);color:var(--text-2)}
+.field{padding:10px 0;border-bottom:1px solid var(--line)}
+.field:last-of-type{border-bottom:0}
+.field .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.field .name{font-weight:600}
+.field .spec{font-size:.8rem;color:var(--text-2);white-space:nowrap}
+.field .prev{font-size:.78rem;color:var(--muted);margin-top:4px}
+.field input.in.bad{border-color:var(--bad);background:var(--bad-bg)}
+.field input.in.ok{border-color:var(--good)}
+.opts{display:flex;gap:6px}
+.opts button{flex:1;border:1px solid var(--line);background:var(--surface);padding:10px 4px;border-radius:10px;font-weight:600}
+.opts button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.opts button.badsel[aria-pressed="true"]{background:var(--bad);border-color:var(--bad)}
+.sticky{position:sticky;bottom:72px;margin-top:12px;z-index:4}
+.hdr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.hdr .who{grid-column:1 / -1}
+@media (min-width:560px){ .hdr{grid-template-columns:1fr 1fr 1fr} .hdr .who{grid-column:auto} }
+body{overflow-x:hidden}
+input[type="date"].in,input[type="time"].in{min-width:0;-webkit-appearance:none;appearance:none;min-height:44px}
+.btn{width:100%;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:1rem;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn:disabled{opacity:.5}
+.msg{border-radius:10px;padding:10px 12px;margin:8px 0;font-size:.9rem}
+.msg.err{background:var(--bad-bg);color:var(--bad-ink)}
+.msg.ok{background:var(--good-bg);color:var(--good-ink)}
+.msg.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);z-index:5}
+.tabbar button{flex:1;border:0;background:transparent;padding:10px 0 12px;font-size:.8rem;color:var(--muted)}
+.tabbar button b{display:block;font-size:1.2rem;line-height:1.2}
+.tabbar button[aria-current="page"]{color:var(--accent);font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px}
+.kpi .l{font-size:.75rem;color:var(--text-2)}
+.kpi .v{font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .s{font-size:.75rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--text-2);font-weight:600;font-size:.78rem}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{white-space:nowrap}
+.hbar{display:grid;grid-template-columns:88px 1fr 48px;gap:8px;align-items:center;font-size:.82rem;margin:5px 0}
+.hbar .t{height:16px;background:var(--surface-2);border-radius:4px;position:relative}
+.hbar .t i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0}
+.legend{display:flex;gap:12px;font-size:.8rem;color:var(--text-2);margin:4px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:.78rem;padding:4px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-120%);display:none}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:9;max-width:90vw}
+.hidden{display:none!important}
+.center{min-height:80vh;display:flex;align-items:center;justify-content:center}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;vertical-align:-3px}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<!-- PIN -->
+<div id="pinView" class="wrap center">
+  <div class="card" style="width:100%;max-width:360px">
+    <h1>🛠️ Utility 운전일지</h1>
+    <p class="muted">현장 입력용 PIN을 입력하세요.</p>
+    <input id="pinIn" class="in" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN">
+    <div id="pinMsg"></div>
+    <button class="btn" style="margin-top:10px" onclick="login()">들어가기</button>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+  <div class="wrap">
+    <h1>🛠️ Utility 운전일지</h1>
+    <div class="seg" id="campusSeg"></div>
+    <div class="hdr">
+      <div><label class="f">점검일</label><input id="dateIn" class="in" type="date"></div>
+      <div><label class="f">점검시각</label><input id="timeIn" class="in" type="time" step="600"></div>
+      <div class="who"><label class="f">점검자</label><input id="whoIn" class="in" type="text" placeholder="이름"></div>
+    </div>
+
+    <!-- 입력: 설비 목록 -->
+    <section id="vList" style="margin-top:12px">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <b id="progText" style="flex:none">불러오는 중…</b><span id="progSub" class="muted" style="flex:none;text-align:right"></span>
+        </div>
+        <div class="bar"><i id="progBar" style="width:0"></i></div>
+      </div>
+      <div class="chips" id="typeChips" style="margin-top:10px"></div>
+      <div id="listMsg"></div>
+      <div class="grid" id="eqGrid"></div>
+    </section>
+
+    <!-- 입력: 설비 폼 -->
+    <section id="vForm" class="hidden" style="margin-top:12px">
+      <div id="formMsg"></div>
+      <div class="card">
+        <div class="row" style="align-items:flex-start">
+          <div><b id="formTitle" style="font-size:1.1rem"></b><div id="formSub" class="muted"></div></div>
+          <button class="btn ghost" style="flex:none;width:auto;padding:8px 12px" onclick="showList()">◀ 목록</button>
+        </div>
+        <div id="fields" style="margin-top:6px"></div>
+        <div class="field"><label class="f">메모 (특이사항)</label><input id="memoIn" class="in" type="text"></div>
+      </div>
+      <div class="sticky"><button id="saveBtn" class="btn" onclick="save()">💾 저장</button></div>
+    </section>
+
+    <!-- 현황 -->
+    <section id="vDash" class="hidden" style="margin-top:12px">
+      <div class="row"><div><label class="f">조회일</label><input id="dashDate" class="in" type="date"></div>
+        <div style="flex:none;align-self:end"><button class="btn ghost" style="width:auto;padding:10px 14px" onclick="loadDash()">조회</button></div></div>
+      <div id="dashBody" style="margin-top:10px"></div>
+      <h2>📈 항목 추이 (최근 60일)</h2>
+      <div class="row">
+        <select id="trEq" class="in" onchange="fillPoints()"></select>
+        <select id="trPt" class="in" onchange="loadSeries()"></select>
+      </div>
+      <div class="card chart" id="trChart" style="margin-top:8px"><span class="muted">설비와 항목을 선택하세요.</span></div>
+    </section>
+
+    <!-- 공기압축기 -->
+    <section id="vComp" class="hidden" style="margin-top:12px">
+      <div class="row">
+        <div><label class="f">시작일</label><input id="cStart" class="in" type="date"></div>
+        <div><label class="f">종료일</label><input id="cEnd" class="in" type="date"></div>
+        <div style="flex:none;align-self:end"><button class="btn ghost" style="width:auto;padding:10px 14px" onclick="loadComp()">조회</button></div>
+      </div>
+      <p class="muted">두 날짜를 비우면 전체 기간. 가동률 = 부하 증가 ÷ 총(부하+무부하) 증가</p>
+      <div id="compBody"></div>
+    </section>
+  </div>
+
+  <nav class="tabbar">
+    <button data-v="vList" aria-current="page" onclick="go('vList')"><b>📝</b>점검 입력</button>
+    <button data-v="vDash" onclick="go('vDash')"><b>📊</b>오늘 현황</button>
+    <button data-v="vComp" onclick="go('vComp')"><b>⚙️</b>공기압축기</button>
+  </nav>
+</div>
+<div id="toast"></div>
+
+<script>
+// ---------- 공통 ----------
+var S = { pin:'', items:[], comps:[], campus:'', type:'', equip:'', day:{today:{},prev:{}}, deep:{} };
+var CC = {'1캠퍼스':'var(--c1)','2캠퍼스':'var(--c2)','3캠퍼스':'var(--c3)'};
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function api(fn){
+  var args = Array.prototype.slice.call(arguments,1);
+  return new Promise(function(res,rej){
+    google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(e); })[fn].apply(null,args);
+  });
+}
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){ return null; } }
+function toast(t){ var el=$('toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast.h); toast.h=setTimeout(function(){el.style.display='none';},2600); }
+function pct(v){ return v==null?'—':(v*100).toFixed(1)+'%'; }
+function msg(el,cls,lines){ $(el).innerHTML = lines.length? '<div class="msg '+cls+'">'+lines.map(esc).join('<br>')+'</div>' : ''; }
+function num(v){ if(v==null) return null; var s=String(v).trim().replace(/,/g,''); if(s==='') return null; var f=Number(s); return isFinite(f)?f:null; }
+function specText(it){
+  var lo=it['하한'],hi=it['상한'],u=it['단위']||'';
+  if(it['입력형태']==='선택') return it['관리SPEC']||'';
+  if(lo!==''&&hi!=='') return (lo+'~'+hi+' '+u).trim();
+  if(hi!=='') return (hi+' 이하 '+u).trim();
+  if(lo!=='') return (lo+' 이상 '+u).trim();
+  return it['관리SPEC']||u;
+}
+function judge(it,v){
+  if(v==null||String(v).trim()==='') return '';
+  if(it['입력형태']==='선택'){ var ok=String(it['정상값']||'').split(',').filter(String); if(!ok.length) return '기록'; return ok.indexOf(String(v))>=0?'정상':'이탈'; }
+  var x=num(v); if(x===null) return ''; var lo=num(it['하한']),hi=num(it['상한']);
+  if(lo===null&&hi===null) return '기록';
+  return ((lo!==null&&x<lo)||(hi!==null&&x>hi))?'이탈':'정상';
+}
+
+// ---------- 시작 ----------
+function login(){
+  var p=$('pinIn').value.trim(); if(!p) return;
+  msg('pinMsg','ok',['확인 중…']);
+  api('apiInit',p).then(function(r){
+    S.pin=p; try{ sessionStorage.setItem('pin',p);}catch(e){}
+    S.items=r.items; S.comps=r.comps;
+    $('dateIn').value=r.now.date; $('dashDate').value=r.now.date;
+    var hm=r.now.time.split(':'); $('timeIn').value=hm[0]+':'+String(Math.floor(hm[1]/10)*10).padStart(2,'0');
+    $('whoIn').value=store('who')||'';
+    $('pinView').classList.add('hidden'); $('appView').classList.remove('hidden');
+    var camps=[]; S.items.forEach(function(i){ if(camps.indexOf(i['캠퍼스'])<0) camps.push(i['캠퍼스']); });
+    S.campus = (S.deep.campus && camps.indexOf(S.deep.campus)>=0) ? S.deep.campus : (store('campus')||camps[0]);
+    if(camps.indexOf(S.campus)<0) S.campus=camps[0];
+    $('campusSeg').innerHTML = camps.map(function(c){ return '<button data-c="'+esc(c)+'">'+esc(c)+'</button>'; }).join('');
+    $('campusSeg').onclick=function(e){ var b=e.target.closest('button'); if(b) setCampus(b.dataset.c); };
+    setCampus(S.campus, S.deep.equip);
+  }).catch(function(e){ msg('pinMsg','err',[e.message||String(e)]); });
+}
+function setCampus(c, openEquip){
+  S.campus=c; S.type=''; store('campus',c);
+  Array.prototype.forEach.call($('campusSeg').children,function(b){ b.setAttribute('aria-pressed', b.dataset.c===c); });
+  fillTrendEq();
+  loadDay().then(function(){ if(openEquip) openForm(openEquip); });
+  if(!$('vComp').classList.contains('hidden')) loadComp();
+  if(!$('vDash').classList.contains('hidden')) loadDash();
+}
+$('dateIn').addEventListener('change',function(){ loadDay().then(function(){ if(!$('vForm').classList.contains('hidden')) openForm(S.equip); }); });
+$('whoIn').addEventListener('change',function(){ store('who',this.value.trim()); });
+$('pinIn').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
+$('dashDate').addEventListener('change',function(){ loadDash(); loadSeries(); });
+$('cStart').addEventListener('change',loadComp); $('cEnd').addEventListener('change',loadComp);
+
+function go(v){
+  ['vList','vForm','vDash','vComp'].forEach(function(id){ $(id).classList.toggle('hidden', id!==v); });
+  Array.prototype.forEach.call(document.querySelectorAll('.tabbar button'),function(b){
+    if(b.dataset.v===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  if(v==='vDash') loadDash();
+  if(v==='vComp') loadComp();
+  window.scrollTo(0,0);
+}
+
+// ---------- 입력: 목록 ----------
+function campusItems(){ return S.items.filter(function(i){ return i['캠퍼스']===S.campus; }); }
+function equipList(){
+  var m={}, out=[];
+  campusItems().forEach(function(it){
+    var n=it['설비명'];
+    if(!m[n]){ m[n]={name:n,type:it['설비유형'],n:0,done:0,bad:0}; out.push(m[n]); }
+    var t=S.day.today[n+'|'+it['점검항목']];
+    m[n].n++; if(t&&t['값']!==''){ m[n].done++; if(t['판정']==='이탈') m[n].bad++; }
+  });
+  return out;
+}
+function loadDay(){
+  $('progText').innerHTML='<span class="spin"></span> 불러오는 중';
+  return api('apiDay',S.pin,S.campus,$('dateIn').value).then(function(r){ S.day=r; renderList(); })
+    .catch(function(e){ msg('listMsg','err',[e.message||String(e)]); });
+}
+function renderList(){
+  var eqs=equipList(), total=0, done=0, bad=0, fin=0, types=[];
+  eqs.forEach(function(e){ total+=e.n; done+=e.done; bad+=e.bad; if(e.done===e.n) fin++; if(types.indexOf(e.type)<0) types.push(e.type); });
+  $('progText').textContent = $('dateIn').value.slice(5).replace('-','/')+' 입력 '+done+'/'+total+'항목';
+  $('progSub').innerHTML = '설비 '+fin+'/'+eqs.length+' 완료'+(bad?' <span class="badge b-bad">이탈 '+bad+'</span>':'');
+  $('progBar').style.width = (total? done/total*100:0)+'%';
+  $('typeChips').innerHTML = ['전체'].concat(types).map(function(t){
+    var on = (t==='전체'&&!S.type)||t===S.type; return '<button aria-pressed="'+on+'" data-t="'+esc(t)+'">'+esc(t)+'</button>'; }).join('');
+  $('typeChips').onclick=function(e){ var b=e.target.closest('button'); if(!b) return; S.type = b.dataset.t==='전체'?'':b.dataset.t; renderList(); };
+  $('eqGrid').innerHTML = eqs.filter(function(e){ return !S.type||e.type===S.type; }).map(function(e){
+    var cls = e.bad?'bad':(e.done===e.n?'done':(e.done?'part':''));
+    var icon = e.bad?'⚠️':(e.done===e.n?'✅':(e.done?'🟡':'⬜'));
+    return '<button class="eq '+cls+'" data-e="'+esc(e.name)+'"><b>'+icon+' '+esc(e.name)+'</b><span>'+e.done+'/'+e.n+' 항목'+(e.bad?' · 이탈 '+e.bad:'')+'</span></button>';
+  }).join('');
+  $('eqGrid').onclick=function(ev){ var b=ev.target.closest('.eq'); if(b) openForm(b.dataset.e); };
+}
+function showList(){ $('formMsg').innerHTML=''; $('listMsg').innerHTML=''; go('vList'); renderList(); }
+
+// ---------- 입력: 폼 ----------
+function openForm(equip){
+  S.equip=equip; $('formMsg').innerHTML='';
+  var its=campusItems().filter(function(i){ return i['설비명']===equip; });
+  if(!its.length){ showList(); return; }
+  var comp=S.comps.filter(function(c){ return c['캠퍼스']===S.campus&&c['설비명']===equip; })[0];
+  $('formTitle').textContent=equip;
+  $('formSub').textContent = its[0]['설비유형'] + (comp? ' · '+comp['형식']+(comp['형식']==='인버터형'?' (운전값 '+comp['최소운전값']+'~'+comp['최대운전값']+' '+comp['단위']+')':'')+' · 부하/무부하 = 계기 누적값':'');
+  $('fields').innerHTML = its.map(function(it,ix){
+    var k=it['점검항목'], t=S.day.today[equip+'|'+k], pv=S.day.prev[equip+'|'+k];
+    var val = t? t['값'] : '', spec=specText(it), inp;
+    if(it['입력형태']==='선택'){
+      var ok=String(it['정상값']||'').split(',');
+      inp = '<div class="opts" data-k="'+esc(k)+'">'+String(it['선택지']).split(',').map(function(o){
+        var bad = it['정상값'] && ok.indexOf(o)<0;
+        return '<button type="button" class="'+(bad?'badsel':'')+'" aria-pressed="'+(o===val)+'" data-o="'+esc(o)+'">'+esc(o)+'</button>'; }).join('')+'</div>';
+    } else {
+      var neg = (num(it['하한'])!==null&&num(it['하한'])<0)||(num(it['상한'])!==null&&num(it['상한'])<0);
+      inp = '<input class="in" data-k="'+esc(k)+'" data-i="'+ix+'" type="text" inputmode="'+(neg?'text':'decimal')+'" autocomplete="off" placeholder="'+esc(it['단위']||'값')+'" value="'+esc(val)+'">';
+    }
+    return '<div class="field"><div class="top"><span class="name">'+esc(k)+' <span class="jb" data-k="'+esc(k)+'"></span></span><span class="spec">'+esc(spec)+'</span></div>'+inp+
+      (pv?'<div class="prev">직전 '+esc(pv.v)+' '+esc(it['단위'])+' ('+esc(pv.d.slice(5))+')</div>':'')+'</div>';
+  }).join('');
+  $('memoIn').value='';
+  var byK={}; its.forEach(function(i){ byK[i['점검항목']]=i; });
+  function mark(k,v){
+    var j=judge(byK[k],v), b=document.querySelector('.jb[data-k="'+CSS.escape(k)+'"]');
+    b.innerHTML = j==='이탈'?'<span class="badge b-bad">이탈</span>':j==='정상'?'<span class="badge b-ok">정상</span>':'';
+    var el=document.querySelector('input.in[data-k="'+CSS.escape(k)+'"]');
+    if(el){ el.classList.toggle('bad',j==='이탈'); el.classList.toggle('ok',j==='정상'); }
+  }
+  Array.prototype.forEach.call($('fields').querySelectorAll('input.in'),function(el){
+    mark(el.dataset.k, el.value);
+    el.addEventListener('input',function(){ mark(el.dataset.k, el.value); });
+    el.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var all=$('fields').querySelectorAll('input.in'); var n=all[Array.prototype.indexOf.call(all,el)+1]; if(n) n.focus(); else el.blur(); } });
+  });
+  Array.prototype.forEach.call($('fields').querySelectorAll('.opts'),function(g){
+    var cur=g.querySelector('[aria-pressed="true"]'); mark(g.dataset.k, cur?cur.dataset.o:'');
+    g.onclick=function(e){ var b=e.target.closest('button'); if(!b) return;
+      var on=b.getAttribute('aria-pressed')!=='true';
+      Array.prototype.forEach.call(g.children,function(x){ x.setAttribute('aria-pressed', x===b&&on); });
+      mark(g.dataset.k, on?b.dataset.o:''); };
+  });
+  go('vForm');
+}
+function save(){
+  var who=$('whoIn').value.trim();
+  if(!who){ msg('formMsg','err',['점검자 이름을 입력하세요']); $('whoIn').focus(); return; }
+  store('who',who);
+  var values={};
+  Array.prototype.forEach.call($('fields').querySelectorAll('input.in'),function(el){ if(el.value.trim()!=='') values[el.dataset.k]=el.value.trim(); });
+  Array.prototype.forEach.call($('fields').querySelectorAll('.opts'),function(g){ var b=g.querySelector('[aria-pressed="true"]'); if(b) values[g.dataset.k]=b.dataset.o; });
+  if(!Object.keys(values).length){ msg('formMsg','err',['입력된 값이 없습니다']); return; }
+  var btn=$('saveBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> 저장 중';
+  var p={campus:S.campus,equip:S.equip,date:$('dateIn').value,time:$('timeIn').value,inspector:who,memo:$('memoIn').value.trim(),values:values};
+  api('apiSave',S.pin,p).then(function(r){
+    btn.disabled=false; btn.textContent='💾 저장';
+    if(!r.ok){ msg('formMsg','err',r.errors); window.scrollTo(0,0); return; }
+    Object.keys(values).forEach(function(k){ S.day.today[S.equip+'|'+k]={값:values[k],판정:r.judged[k]||'',점검자:who}; });
+    var saved=S.equip, eqs=equipList(), names=eqs.map(function(e){return e.name;});
+    var next=eqs.filter(function(e,i){ return e.done<e.n && i>names.indexOf(saved) && (!S.type||e.type===S.type); })[0];
+    if(next){ openForm(next.name); }
+    else { showList(); }
+    var lines=['✅ '+saved+' 저장 완료'+(next?' → 다음: '+next.name:'')];
+    msg(next?'formMsg':'listMsg', r.warns&&r.warns.length?'warn':'ok', lines.concat(r.warns||[]));
+  }).catch(function(e){ btn.disabled=false; btn.textContent='💾 저장'; msg('formMsg','err',[e.message||String(e)]); });
+}
+
+// ---------- 현황 ----------
+function loadDash(){
+  var d=$('dashDate').value;
+  $('dashBody').innerHTML='<span class="spin"></span>';
+  api('apiDash',S.pin,d).then(function(r){
+    var h='<div class="kpis">'+r.campus.map(function(c){
+      return '<div class="kpi"><div class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+CC[c['캠퍼스']]+'"></i> '+esc(c['캠퍼스'])+'</div><div class="v">'+Math.round(c['입력']/c['전체']*100)+'%</div><div class="s">'+c['입력']+'/'+c['전체']+' 항목 · '+(c['이탈']?'<span class="badge b-bad">이탈 '+c['이탈']+'</span>':'이탈 없음')+'</div></div>'; }).join('')+'</div>';
+    h+='<h2>⚠️ SPEC 이탈 항목</h2>';
+    h+= r.deviations.length ? '<div class="card" style="padding:4px 8px"><table><tr><th>설비</th><th>항목</th><th>값</th><th>SPEC</th></tr>'+r.deviations.map(function(x){
+      return '<tr><td>'+esc(x['캠퍼스'].slice(0,1))+'캠 '+esc(x['설비명'])+'</td><td>'+esc(x['점검항목'])+'</td><td class="n"><b>'+esc(x['값'])+'</b></td><td>'+esc(x.SPEC)+'</td></tr>'; }).join('')+'</table></div>' : '<p class="muted">이탈 항목이 없습니다.</p>';
+    h+='<h2>⬜ 미완료 설비</h2>'+r.campus.map(function(c){
+      return '<details class="card" style="margin-bottom:6px"><summary><b>'+esc(c['캠퍼스'])+'</b> — '+c['미완료'].length+'/'+c['설비수']+'대 미완료</summary><p class="muted" style="margin:6px 0 0">'+(esc(c['미완료'].join(', '))||'모두 완료')+'</p></details>'; }).join('');
+    $('dashBody').innerHTML=h;
+  }).catch(function(e){ $('dashBody').innerHTML='<div class="msg err">'+esc(e.message||e)+'</div>'; });
+}
+function fillTrendEq(){
+  var its=campusItems().filter(function(i){ return i['입력형태']==='숫자'; }), names=[];
+  its.forEach(function(i){ if(names.indexOf(i['설비명'])<0) names.push(i['설비명']); });
+  $('trEq').innerHTML=names.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('');
+  fillPoints();
+}
+function fillPoints(){
+  var e=$('trEq').value;
+  $('trPt').innerHTML=campusItems().filter(function(i){ return i['설비명']===e&&i['입력형태']==='숫자'; })
+    .map(function(i){ return '<option>'+esc(i['점검항목'])+'</option>'; }).join('');
+  if(!$('vDash').classList.contains('hidden')) loadSeries();
+}
+function loadSeries(){
+  var e=$('trEq').value, p=$('trPt').value; if(!e||!p) return;
+  var it=campusItems().filter(function(i){ return i['설비명']===e&&i['점검항목']===p; })[0];
+  $('trChart').innerHTML='<span class="spin"></span>';
+  api('apiSeries',S.pin,S.campus,e,p,$('dashDate').value).then(function(pts){
+    if(!pts.length){ $('trChart').innerHTML='<span class="muted">최근 60일 기록이 없습니다.</span>'; return; }
+    lineChart($('trChart'), [{name:S.campus,color:CC[S.campus],pts:pts.map(function(x){return {x:x.d,y:x.v,t:x.d+' · '+x.v+' '+it['단위']+' · '+x.who};})}],
+      {lo:num(it['하한']),hi:num(it['상한']),unit:it['단위'],caption:(it['하한']||it['상한'])?'빨간 점선 = 관리 SPEC ('+specText(it)+')':'관리 SPEC 없음 (기록 항목)'});
+  }).catch(function(err){ $('trChart').innerHTML='<div class="msg err">'+esc(err.message||err)+'</div>'; });
+}
+
+// ---------- SVG 선 차트 (hover 툴팁) ----------
+function lineChart(el, series, o){
+  var W=Math.max(300,(el.clientWidth||640)-24),H=220,L=40,R=10,T=12,B=26, xs=[], ys=[];
+  series.forEach(function(s){ s.pts.forEach(function(p){ if(xs.indexOf(p.x)<0) xs.push(p.x); if(p.y!=null) ys.push(p.y); }); });
+  xs.sort(); if(o.lo!=null) ys.push(o.lo); if(o.hi!=null) ys.push(o.hi);
+  var y0=o.ymin!=null?o.ymin:Math.min.apply(null,ys), y1=o.ymax!=null?o.ymax:Math.max.apply(null,ys);
+  if(y0===y1){ y0-=1; y1+=1; } var pad=o.ymin!=null?0:(y1-y0)*.1; y0-=pad; y1+=pad;
+  var X=function(x){ var i=xs.indexOf(x); return L+(xs.length<2?(W-L-R)/2:i*(W-L-R)/(xs.length-1)); };
+  var Y=function(y){ return T+(1-(y-y0)/(y1-y0))*(H-T-B); };
+  var g='', ticks=4;
+  for(var i=0;i<=ticks;i++){ var v=y0+(y1-y0)*i/ticks, yy=Y(v);
+    g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+(Math.abs(v)>=100?v.toFixed(0):+v.toFixed(2))+'</text>'; }
+  var step=Math.ceil(xs.length/6);
+  xs.forEach(function(x,i){ if(i%step===0||i===xs.length-1) g+='<text x="'+X(x)+'" y="'+(H-8)+'" text-anchor="'+(i===xs.length-1&&xs.length>1?'end':i===0&&xs.length>1?'start':'middle')+'" font-size="11" fill="var(--muted)">'+x.slice(5).replace('-','/')+'</text>'; });
+  [o.lo,o.hi].forEach(function(b){ if(b!=null) g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(b)+'" y2="'+Y(b)+'" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="5 4"/>'; });
+  var dots=[];
+  series.forEach(function(s){
+    var d=s.pts.filter(function(p){return p.y!=null;}).map(function(p,i){ return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1); }).join(' ');
+    g+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round"/>';
+    s.pts.forEach(function(p){ if(p.y==null) return; dots.push(p); var bad=(o.lo!=null&&p.y<o.lo)||(o.hi!=null&&p.y>o.hi);
+      g+='<circle cx="'+X(p.x)+'" cy="'+Y(p.y)+'" r="4.5" fill="'+(bad?'var(--bad)':s.color)+'" stroke="var(--surface)" stroke-width="2"/>'+
+         '<circle class="hit" data-t="'+esc(p.t)+'" cx="'+X(p.x)+'" cy="'+Y(p.y)+'" r="14" fill="transparent"/>'; });
+  });
+  el.innerHTML=(series.length>1?'<div class="legend">'+series.map(function(s){return '<span><i style="background:'+s.color+'"></i>'+esc(s.name)+'</span>';}).join('')+'</div>':'')+
+    '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="추이 차트">'+g+'</svg><div class="tip"></div>'+(o.caption?'<div class="muted">'+esc(o.caption)+'</div>':'');
+  var tip=el.querySelector('.tip'), svg=el.querySelector('svg');
+  Array.prototype.forEach.call(el.querySelectorAll('.hit'),function(c){
+    var show=function(){ var r=svg.getBoundingClientRect(), k=r.width/W; tip.textContent=c.dataset.t; tip.style.left=(c.cx.baseVal.value*k)+'px'; tip.style.top=(c.cy.baseVal.value*k+svg.offsetTop)+'px'; tip.style.display='block'; };
+    c.addEventListener('pointerenter',show); c.addEventListener('click',show);
+    c.addEventListener('pointerleave',function(){ tip.style.display='none'; });
+  });
+}
+
+// ---------- 공기압축기 ----------
+function loadComp(){
+  $('compBody').innerHTML='<span class="spin"></span>';
+  api('apiComp',S.pin,$('cStart').value,$('cEnd').value).then(function(r){
+    if(!r.range){ $('compBody').innerHTML='<p class="muted">부하/무부하 시간 기록이 없습니다.</p>'; return; }
+    var h='';
+    r.campus.filter(function(c){return c['입력호기']>0;}).forEach(function(c){
+      h+='<div class="card" style="margin-bottom:8px"><b><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+CC[c['캠퍼스']]+'"></i> '+esc(c['캠퍼스'])+'</b> <span class="muted">'+c['대수']+'대'+(c['시작일']?' · '+c['시작일'].slice(5)+'~'+c['종료일'].slice(5):'')+'</span>'+
+        '<div class="kpis" style="margin-top:8px"><div class="kpi"><div class="l">가동률</div><div class="v">'+pct(c['가동률'])+'</div></div>'+
+        '<div class="kpi"><div class="l">기간 용량 사용률</div><div class="v">'+pct(c['용량사용률'])+'</div></div>'+
+        '<div class="kpi"><div class="l">최근 측정 사용률</div><div class="v">'+pct(c['최근사용률'])+'</div></div></div>'+
+        (c['상태']!=='정상'?'<div class="msg warn">'+esc(c['상태'])+'</div>':'')+
+        (c['보정시간']?'<div class="muted" style="margin-top:6px">시간 자동 보정 +'+c['보정시간'].toFixed(1)+'h</div>':'')+'</div>';
+    });
+    var us=r.units.filter(function(u){return u['건수']>0;});
+    h+='<h2>호기별 가동률 · 용량 사용률</h2><div class="card">'+us.map(function(u){
+      var nm=u['캠퍼스'].slice(0,1)+'캠 '+u['호기'].replace('공기압축기 ','');
+      return '<div class="hbar" title="'+esc(u['형식']+' · '+u['상태'])+'"><span>'+esc(nm)+'</span><span><span class="t" style="display:block;margin-bottom:2px"><i style="width:'+((u['가동률']||0)*100)+'%;background:'+CC[u['캠퍼스']]+'"></i></span>'+
+        '<span class="t" style="display:block;height:8px"><i style="width:'+((u['용량사용률']||0)*100)+'%;background:'+CC[u['캠퍼스']]+';opacity:.45"></i></span></span><span class="n" style="text-align:right">'+pct(u['가동률'])+'</span></div>'; }).join('')+
+      '<div class="muted">굵은 막대 = 가동률, 얇은 막대 = 기간 용량 사용률</div></div>';
+    h+='<h2>일별 용량 사용률 추이</h2><div class="card chart" id="compTrend"></div>';
+    h+='<h2>호기별 상세</h2><div class="card" style="padding:4px 8px;overflow-x:auto"><table class="tbl"><tr><th>호기</th><th>형식</th><th class="n">기간총(h)</th><th class="n">부하(h)</th><th class="n">가동률</th><th class="n">용량</th><th>상태</th></tr>'+us.map(function(u){
+      return '<tr><td>'+esc(u['캠퍼스'].slice(0,1)+'캠 '+u['호기'].replace('공기압축기 ',''))+'</td><td>'+esc(u['형식'].replace('형',''))+'</td><td class="n">'+(u['기간총']==null?'—':u['기간총'])+'</td><td class="n">'+(u['기간부하']==null?'—':u['기간부하'])+'</td><td class="n">'+pct(u['가동률'])+'</td><td class="n">'+pct(u['용량사용률'])+'</td><td>'+esc(u['상태'])+'</td></tr>'; }).join('')+'</table></div>';
+    $('compBody').innerHTML=h;
+    if(!$('cStart').value&&!$('cEnd').value){ $('cStart').placeholder=r.range[0]; }
+    var camps={}; r.trend.forEach(function(t){ (camps[t['캠퍼스']]=camps[t['캠퍼스']]||[]).push({x:t['날짜'],y:t['용량사용률']==null?null:t['용량사용률']*100,t:t['캠퍼스']+' '+t['날짜']+' · '+pct(t['용량사용률'])}); });
+    var ser=Object.keys(camps).map(function(c){ return {name:c,color:CC[c],pts:camps[c]}; });
+    if(ser.length) lineChart($('compTrend'),ser,{ymin:0,ymax:100,unit:'%',caption:'용량 사용률(%) = 환산 사용시간 ÷ 보정 경과시간'});
+  }).catch(function(e){ $('compBody').innerHTML='<div class="msg err">'+esc(e.message||e)+'</div>'; });
+}
+
+// ---------- QR 딥링크 (?campus=2캠퍼스&equip=공기압축기 1-1) + PIN 유지 ----------
+(function(){
+  try{ google.script.url.getLocation(function(loc){ S.deep = loc.parameter||{}; }); }catch(e){}
+  var p=null; try{ p=sessionStorage.getItem('pin'); }catch(e){}
+  if(p){ $('pinIn').value=p; login(); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+streamlit==1.45.1
+pandas==2.2.3
+altair==5.5.0
+gspread==6.1.4
+openai==3.35.1
