@@ -124,7 +124,12 @@ def master_system(reports: dict, overview: dict) -> str:
 
 def overview(D: dict, now: datetime, include_names=False) -> dict:
     wk = bf.build_weekly_context(D["items"], D["log"], D["comps"], now, include_names)
+    n = D["items"].groupby("캠퍼스").size()
+    tot = sum(n.get(e["캠퍼스"], 0) for e in wk["입력현황"])
+    overall = sum(e["이번주_입력률"] * n.get(e["캠퍼스"], 0) for e in wk["입력현황"]) / tot if tot else 0
     return {"기준시각": wk["기준시각"], "이번주": wk["이번주"], "지난주": wk["지난주"],
+            "전체_이번주_입력률": round(overall, 3),
+            "입력률_기준": "입력 항목 수 ÷ (점검항목 수 × 이번 주 점검일수), 캠퍼스별 항목 수 가중",
             "입력현황": [{"캠퍼스": e["캠퍼스"], "이번주_입력률": e["이번주_입력률"], "일자별": e["일자별"]}
                      for e in wk["입력현황"]]}
 

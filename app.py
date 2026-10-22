@@ -535,6 +535,16 @@ if page == "⚡ 부하측정":
 
 
 # ======================= 🤖 브리핑 (총괄 + 담당자 4명) =======================
+def md_lines(text: str) -> str:
+    """마크다운에서 한 줄 바꿈이 무시되지 않도록 줄 끝에 강제 줄바꿈(공백 2칸) 추가."""
+    return "\n".join(l if (not l.strip() or l.endswith("  ")) else l + "  " for l in str(text).split("\n"))
+
+
+def md_stream(gen):
+    for chunk in gen:
+        yield str(chunk).replace("\n", "  \n")
+
+
 def _propose(rec):
     st.session_state.setdefault("pending_maint", []).append(rec)
 
@@ -572,13 +582,13 @@ if page == "🤖 브리핑":
         for m in ch["msgs"]:
             if not m.get("hidden"):
                 with st.chat_message(m["role"]):
-                    st.markdown(m["content"])
+                    st.markdown(md_lines(m["content"]))
         if ch["pending"]:
             ch["msgs"].append({"role": "user", "content": "브리핑 시작", "hidden": True})
             with st.chat_message("assistant"):
                 try:
-                    text = st.write_stream(bf.stream_openai(api_key, model, ch["system"],
-                                                            [{"role": "user", "content": "브리핑 시작"}]))
+                    text = st.write_stream(md_stream(bf.stream_openai(api_key, model, ch["system"],
+                                                            [{"role": "user", "content": "브리핑 시작"}])))
                     text = text if isinstance(text, str) else "".join(map(str, text))
                 except Exception as e:
                     text = f"⚠️ 총괄 호출 실패: {e}\n\n" + ag.fallback(D, ch["now"])
@@ -621,7 +631,7 @@ if page == "🤖 브리핑":
                     except Exception as e:
                         text = f"⚠️ 응답 실패: {e}"
                     s.update(label="완료", state="complete")
-                st.markdown(text)
+                st.markdown(md_lines(text))
             ch["msgs"].append({"role": "assistant", "content": text})
             if st.session_state.get("pending_maint"):
                 st.rerun()
